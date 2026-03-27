@@ -3,6 +3,12 @@ scheduler
 *.o
 scheduler_data.txt
 
+# node/react
+node_modules/
+dist/
+.vite/
+.env
+
 # editor/os
 .DS_Store
 .vscode/

@@ -1,0 +1,45 @@
+STUDENT SCHEDULER - NOTE
+=========================
+
+OVERVIEW
+--------
+This is a full-stack academic tool that combines a C++ core with a modern React web interface. It helps you track assignments, deadlines, exams, and study topics.
+
+KEY FEATURES
+------------
+- Smart tracking for assignments (sorted by urgency).
+- Exam preparation lists with topic weightage.
+- Readiness scoring for exams.
+- Data is saved locally in 'scheduler_data.txt'.
+
+SYSTEM ARCHITECTURE
+-------------------
+1. Core: C++17 binary (scheduler)
+2. Backend: Node.js/Express (API Bridge)
+3. Frontend: React + TypeScript (Dashboard)
+
+GETTING STARTED
+---------------
+Prerequisites: g++, make, Node.js.
+
+1. Setup Everything:
+   Run 'make setup' to build the C++ core and install all Node packages.
+
+2. Run the Web App:
+   Run 'make run' to start both the server and the frontend.
+   - Frontend: http://localhost:5173
+   - Backend: http://localhost:3001
+
+3. Run the CLI Version (Optional):
+   Run 'make' then './scheduler' to use the terminal interface.
+
+PROJECT FILES
+-------------
+- main.cpp, scheduler.cpp, storage.cpp: C++ Source
+- server/: Node.js backend files
+- client/: React frontend files
+- Makefile: Build and automation script
+
+CLEANUP
+-------
+Run 'make clean' to delete binaries and node_modules.

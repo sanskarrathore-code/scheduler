@@ -271,15 +271,145 @@ void menu() {
     cout << "\n> ";
 }
 
-int main() {
+void jsonAssignments() {
+    cout << "{\"assignments\": [";
+    for (int i = 0; i < (int)assignments.size(); i++) {
+        auto tl = getTimeLeft(assignments[i].deadline);
+        cout << "{"
+             << "\"id\":" << assignments[i].id << ","
+             << "\"name\":\"" << assignments[i].name << "\","
+             << "\"deadline\":\"" << prettyDate(assignments[i].deadline) << "\","
+             << "\"timeLeft\":\"" << tl.text << "\","
+             << "\"completion\":" << assignments[i].completion
+             << "}" << (i == (int)assignments.size() - 1 ? "" : ",");
+    }
+    cout << "]}" << endl;
+}
+
+void jsonExams() {
+    cout << "{\"exams\": [";
+    for (int i = 0; i < (int)exams.size(); i++) {
+        auto tl = getTimeLeft(exams[i].date);
+        int ready = calcReadiness(exams[i].topics);
+        cout << "{"
+             << "\"id\":" << exams[i].id << ","
+             << "\"subject\":\"" << exams[i].subject << "\","
+             << "\"date\":\"" << prettyDate(exams[i].date) << "\","
+             << "\"timeLeft\":\"" << tl.text << "\","
+             << "\"readiness\":" << ready << ","
+             << "\"topics\": [";
+        for (int j = 0; j < (int)exams[i].topics.size(); j++) {
+            cout << "{"
+                 << "\"name\":\"" << exams[i].topics[j].name << "\","
+                 << "\"weightage\":" << exams[i].topics[j].weightage << ","
+                 << "\"done\":" << (exams[i].topics[j].done ? "true" : "false")
+                 << "}" << (j == (int)exams[i].topics.size() - 1 ? "" : ",");
+        }
+        cout << "]"
+             << "}" << (i == (int)exams.size() - 1 ? "" : ",");
+    }
+    cout << "]}" << endl;
+}
+
+int main(int argc, char* argv[]) {
     if (!loadAll(SAVEFILE, assignments, exams)) {
         loadSeedData();
         save();
-        cout << "First run - loaded sample data.\n";
     } else {
         for (int i = 0; i < (int)assignments.size(); i++) syncId(assignments[i].id);
         for (int i = 0; i < (int)exams.size(); i++) syncId(exams[i].id);
-        cout << "Loaded from " << SAVEFILE << "\n";
+    }
+
+    if (argc > 1) {
+        string cmd = argv[1];
+        if (cmd == "--list-assignments") {
+            jsonAssignments();
+        } else if (cmd == "--list-exams") {
+            jsonExams();
+        } else if (cmd == "--add-assignment" && argc >= 7) {
+            Assignment a;
+            a.id = nextId();
+            a.name = argv[2];
+            a.deadline = makeTime(argv[3], stoi(argv[4]), stoi(argv[5]));
+            a.completion = stoi(argv[6]);
+            assignments.push_back(a);
+            save();
+            cout << "{\"status\":\"success\",\"id\":" << a.id << "}" << endl;
+        } else if (cmd == "--update-assignment" && argc >= 4) {
+            int id = stoi(argv[2]);
+            int pct = stoi(argv[3]);
+            for (auto& a : assignments) {
+                if (a.id == id) {
+                    a.completion = pct;
+                    save();
+                    cout << "{\"status\":\"success\"}" << endl;
+                    return 0;
+                }
+            }
+            cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+        } else if (cmd == "--remove-assignment" && argc >= 3) {
+            int id = stoi(argv[2]);
+            for (int i = 0; i < (int)assignments.size(); i++) {
+                if (assignments[i].id == id) {
+                    assignments.erase(assignments.begin() + i);
+                    save();
+                    cout << "{\"status\":\"success\"}" << endl;
+                    return 0;
+                }
+            }
+            cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+        } else if (cmd == "--add-exam" && argc >= 6) {
+            Exam e;
+            e.id = nextId();
+            e.subject = argv[2];
+            e.date = makeTime(argv[3], stoi(argv[4]), stoi(argv[5]));
+            exams.push_back(e);
+            save();
+            cout << "{\"status\":\"success\",\"id\":" << e.id << "}" << endl;
+        } else if (cmd == "--remove-exam" && argc >= 3) {
+            int id = stoi(argv[2]);
+            int idx = findExam(id);
+            if (idx != -1) {
+                exams.erase(exams.begin() + idx);
+                save();
+                cout << "{\"status\":\"success\"}" << endl;
+            } else {
+                cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+            }
+        } else if (cmd == "--add-topic" && argc >= 5) {
+            int eid = stoi(argv[2]);
+            int idx = findExam(eid);
+            if (idx != -1) {
+                exams[idx].topics.push_back({argv[3], stoi(argv[4]), false});
+                save();
+                cout << "{\"status\":\"success\"}" << endl;
+            } else {
+                cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+            }
+        } else if (cmd == "--toggle-topic" && argc >= 4) {
+            int eid = stoi(argv[2]);
+            int tidx = stoi(argv[3]);
+            int idx = findExam(eid);
+            if (idx != -1 && tidx >= 0 && tidx < (int)exams[idx].topics.size()) {
+                exams[idx].topics[tidx].done = !exams[idx].topics[tidx].done;
+                save();
+                cout << "{\"status\":\"success\",\"done\":" << (exams[idx].topics[tidx].done ? "true" : "false") << "}" << endl;
+            } else {
+                cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+            }
+        } else if (cmd == "--remove-topic" && argc >= 4) {
+            int eid = stoi(argv[2]);
+            int tidx = stoi(argv[3]);
+            int idx = findExam(eid);
+            if (idx != -1 && tidx >= 0 && tidx < (int)exams[idx].topics.size()) {
+                exams[idx].topics.erase(exams[idx].topics.begin() + tidx);
+                save();
+                cout << "{\"status\":\"success\"}" << endl;
+            } else {
+                cout << "{\"status\":\"error\",\"message\":\"not found\"}" << endl;
+            }
+        }
+        return 0;
     }
 
     int choice;
